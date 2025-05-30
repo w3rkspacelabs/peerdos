@@ -42,7 +42,8 @@
 <pre id="banner">{HEADING}</pre>
 <div id="terminal-output">
 	{#each output as line}
-		<div class="term-output-line">{line}</div>
+		<div class="term-output-line">{PREFIX}<span class="in">{line.in}</span></div>
+		<div class="term-output-line out">{line.out}</div>
 	{/each}
 </div>
 <div id="prompt">
@@ -52,6 +53,13 @@
 </div>
 
 <style>
+	.in {
+		color: #fff;
+		padding-left: 0.25rem;
+	}
+	.out {
+		padding-left: 1rem;
+	}
 	#prompt {
 		display: flex;
 		align-items: center;
