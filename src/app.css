@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+main,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Courier New', courier, monospace;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #d0dc7e;
+    background: radial-gradient(50% 50% at 50% 50%, #374529 0, #0e1209 100%);
+    background-image: radial-gradient(rgba(7, 86, 7, 0.75), black 120%);
+    height: 100vh;
+    width: 100vw;
+    padding: 2rem;
+}
+
+::selection {
+    background: #0080FF;
+    text-shadow: none;
+}
