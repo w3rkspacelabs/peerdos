@@ -9,6 +9,7 @@
 
 	export let filePath: string;
 	export let content: string = '';
+	export let onClose: () => void;
 
 	let editor: HTMLTextAreaElement;
 	let isSaving = false;

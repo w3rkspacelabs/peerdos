@@ -13,13 +13,24 @@
 	let PWD = $state('');
 	let loading = $state(false);
 	let editingFile: string | null = $state(null);
+	let isPasswordInput = $state(false);
+	let actualPasswordValue = $state('');
 
 	async function handleCommand(cmd: string) {
-		const result = await processCommand(cmd);
+		console.log({ cmd, isPasswordInput, actualPasswordValue });
+		const result = await processCommand(isPasswordInput ? `passwd ${actualPasswordValue}` : cmd);
 		if (result.action === 'CLEAR') {
 			output = [];
 		} else if (result.in) {
-			output.push(result);
+			console.log({ result });
+			if (result.in.startsWith('passwd ')) {
+				let hiddenOutput = Object.assign({}, result);
+				hiddenOutput.in = 'passwd ***';
+				output.push(hiddenOutput);
+			} else {
+				output.push(result);
+			}
+
 			// Check if this is an edit action
 			try {
 				const parsed = JSON.parse(result.out);
@@ -28,7 +39,8 @@
 				}
 			} catch {}
 		}
-
+		isPasswordInput = false;
+		actualPasswordValue = '';
 		await tick();
 	}
 
@@ -70,19 +82,6 @@
 			}
 		};
 
-		const config = { childList: true };
-
-		const callback = function (mutationsList, observer) {
-			for (let mutation of mutationsList) {
-				if (mutation.type === 'childList') {
-					window.scrollTo(0, document.body.scrollHeight);
-				}
-			}
-		};
-
-		const observer = new MutationObserver(callback);
-		observer.observe(scrollEnd, config);
-
 		document.addEventListener('mousedown', onMouseDown);
 		document.addEventListener('mousemove', onMouseMove);
 		document.addEventListener('mouseup', onMouseUp);
@@ -98,10 +97,34 @@
 		};
 	});
 
+	function onKeyPress(e: KeyboardEvent) {
+		const currentValue = promptEl.innerText;
+
+		// Check if we're starting password input
+		if (currentValue.startsWith('passwd ')) {
+			isPasswordInput = true;
+			e.preventDefault();
+			// return;
+			promptEl.innerText = `${currentValue}*`;
+			actualPasswordValue = `${actualPasswordValue}${e.key}`;
+			console.log({ password: e.key, currentValue, actualPasswordValue });
+		}
+
+		// If we're in password input mode
+		// if (isPasswordInput) {
+		// 	e.preventDefault();
+		// 	if (e.key.length === 1) {
+		// 		// Only handle printable characters
+		// 		actualPasswordValue += e.key;
+		// 		promptEl.innerText = 'passwd ' + '*'.repeat(actualPasswordValue.length);
+		// 	}
+		// }
+	}
+
 	async function onKeyDown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			const cmd = promptEl.innerText;
+			const cmd = isPasswordInput ? actualPasswordValue : promptEl.innerText;
 			loading = true;
 			handleCommand(cmd).then(() => {
 				promptEl.innerText = '';
@@ -110,6 +133,10 @@
 			});
 			await tick();
 			focus();
+		} else if (isPasswordInput && e.key === 'Backspace') {
+			e.preventDefault();
+			actualPasswordValue = actualPasswordValue.slice(0, -1);
+			promptEl.innerText = 'passwd ' + '*'.repeat(actualPasswordValue.length);
 		}
 	}
 </script>
@@ -132,6 +159,7 @@
 			role="textbox"
 			tabindex="0"
 			onkeydown={onKeyDown}
+			onkeypress={onKeyPress}
 		></div>
 		{#if loading}
 			<span class="spinner">⏳</span>
@@ -141,7 +169,7 @@
 </div>
 
 {#if editingFile}
-	<Editor filePath={editingFile} {fs} onClose={() => (editingFile = null)} />
+	<Editor filePath={editingFile} onClose={() => (editingFile = null)} />
 {/if}
 
 <style>

@@ -139,7 +139,8 @@ export async function processCommand(cmd: string): Promise<CommandOutput> {
                         { name: 'touch', args: '<path>', desc: 'Create a file' },
                         { name: 'edit', args: '<path>', desc: 'Create or edit a file' },
                         { name: 'token', args: '<symbol>', desc: 'Get token information' },
-                        { name: 'search', args: '<query>', desc: 'Search Blockscout' }
+                        { name: 'search', args: '<query>', desc: 'Search Blockscout' },
+                        { name: 'passwd', args: '<text>', desc: 'Save password to localStorage' }
                     ],
                     note: 'Any other input will be treated as a search query'
                 }, null, 2)
@@ -211,6 +212,33 @@ export async function processCommand(cmd: string): Promise<CommandOutput> {
                 in: trimmed,
                 out: searchResult
             };
+        case 'passwd':
+            if (!args[0]) {
+                return {
+                    in: trimmed,
+                    out: JSON.stringify({ error: 'Password text is required' }, null, 2)
+                };
+            }
+            try {
+                // set only if it doesnt exist or empty
+                if (!localStorage.getItem('PASSWD')) {
+                    localStorage.setItem('PASSWD', args[0]);
+                    return {
+                        in: trimmed,
+                        out: JSON.stringify({ success: true, message: 'Password saved successfully' }, null, 2)
+                    };
+                }
+                return {
+                    in: trimmed,
+                    out: JSON.stringify({ success: false, message: 'Password already exists. Not updated' }, null, 2)
+                };
+
+            } catch (error: any) {
+                return {
+                    in: trimmed,
+                    out: JSON.stringify({ error: error?.message || 'Failed to save password' }, null, 2)
+                };
+            }
         default:
             // Treat as a search query by default
             const defaultSearchResult = await searchBlockscout(trimmed);
