@@ -31,95 +31,157 @@
 			hljs.highlightElement(block as HTMLElement);
 		});
 	});
+
+	function hasMessage(parsed: any) {
+		return parsed.message;
+	}
+
+	function isList(parsed: any) {
+		return Array.isArray(parsed);
+	}
 </script>
 
-{#if isCommandHelp(parsed)}
-	<div class="help-output">
-		<div class="commands">
-			Available commands:
-			{#each parsed.commands as cmd}
-				<span class="command">{cmd}</span>
-			{/each}
-		</div>
+{#if parsed?.type === 'table'}
+	<div class="help-table">
+		<table>
+			<thead>
+				<tr>
+					{#each parsed.headers as header}
+						<th>{header}</th>
+					{/each}
+				</tr>
+			</thead>
+			<tbody>
+				{#each parsed.rows as row}
+					<tr>
+						<td class="command">{row.name}</td>
+						<td class="args">{row.args}</td>
+						<td class="desc">{row.desc}</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
 		{#if parsed.note}
-			<div class="note">{parsed.note}</div>
+			<p class="note"><em>{parsed.note}</em></p>
 		{/if}
 	</div>
 {:else if isSearchResult(parsed)}
 	<div class="search-results">
-		{#each parsed.items as item}
-			<div class="result-item">
-				{#if item.name}
-					<div class="name">{item.name}</div>
-				{/if}
-				{#if item.address}
-					<div class="address">
-						<span class="label">Address:</span>
-						<span class="value">{item.address}</span>
-					</div>
-				{/if}
-				{#if item.token_type}
-					<div class="token-type">
-						<span class="label">Type:</span>
-						<span class="value">{item.token_type}</span>
-					</div>
-				{/if}
-			</div>
-		{/each}
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Address</th>
+					<th>Type</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each parsed.items.filter((item) => item.exchange_rate !== null) as item}
+					<tr>
+						<td>{item.name || '-'}</td>
+						<td class="address">{item.address || '-'}</td>
+						<td>{item.token_type || '-'}</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
+{:else if hasMessage(parsed)}
+	<div class="message">
+		<p>
+			{#if parsed.success}
+				<span class="emoji">✅</span>
+			{:else}
+				<span class="emoji">❌</span>
+			{/if}
+			{parsed.message}
+		</p>
+	</div>
+{:else if isList(parsed)}
+	<div class="file-list">
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Type</th>
+					<th>Size</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each parsed as item}
+					<tr>
+						<td class="name">
+							{#if item.isDirectory}
+								📁
+							{:else}
+								📄
+							{/if}
+							{item.name}
+						</td>
+						<td>{item.type}</td>
+						<td>{item.size} bytes</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
 	</div>
 {:else}
 	<pre><code class="language-json">{JSON.stringify(parsed, null, 2)}</code></pre>
 {/if}
 
 <style>
-	.help-output {
-		padding: 0.5rem 0;
+	.help-table {
+		margin: 1rem 0;
 	}
-	.commands {
-		margin-bottom: 0.5rem;
+	table {
+		border-collapse: collapse;
+		width: 100%;
+	}
+	th {
+		text-align: left;
+		padding: 0.5rem;
+		border-bottom: 1px solid #666;
+	}
+	td {
+		padding: 0.5rem;
 	}
 	.command {
-		background: #2a2a2a;
-		padding: 0.2rem 0.5rem;
-		border-radius: 3px;
-		margin-right: 0.5rem;
-		color: #fff;
+		font-weight: bold;
+		color: #4caf50;
+	}
+	.args {
+		color: #ffa726;
 	}
 	.note {
+		margin-top: 1rem;
 		color: #888;
-		font-style: italic;
 	}
 	.search-results {
 		padding: 0.5rem 0;
+		overflow-x: auto;
 	}
-	.result-item {
-		background: #2a2a2a;
-		padding: 1rem;
-		border-radius: 4px;
-		margin-bottom: 0.5rem;
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: 'Courier New', Courier, monospace;
 	}
-	.name {
-		font-size: 1.1em;
-		font-weight: bold;
-		margin-bottom: 0.5rem;
+	th {
+		text-align: left;
+		padding: 0.5rem;
+		border-bottom: 1px solid #444;
+		color: #888;
+		font-weight: normal;
+	}
+	td {
+		padding: 0.5rem;
+		border-bottom: 1px solid #2a2a2a;
 		color: #fff;
 	}
-	.address,
-	.token-type {
-		margin: 0.25rem 0;
-	}
-	.label {
-		color: #888;
-		margin-right: 0.5rem;
-	}
-	.value {
-		color: #4a9eff;
+	td.address {
 		font-family: monospace;
+		color: #4a9eff;
 	}
-	pre code {
-		font-family: 'Courier New', Courier, monospace;
-		padding: 1rem;
-		border-radius: 4px;
-		margin: 0.5rem 0;
+	tr:hover {
+		background: #2a2a2a;
 	}
 </style>
