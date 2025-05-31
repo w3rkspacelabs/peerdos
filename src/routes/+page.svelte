@@ -2,19 +2,20 @@
 	import { HEADING, PREFIX } from '$lib/constants';
 	import { onMount } from 'svelte';
 	import { tick } from 'svelte';
-	let promptEl: HTMLDivElement;
-	type io = { in: string; out: string };
-	let output: io[] = $state([]);
+	import { processCommand, type CommandOutput } from '$lib/commands';
+	import FormattedOutput from '$lib/components/FormattedOutput.svelte';
 
-	function handleCommand(cmd: string) {
-		const trimmed = cmd.trim();
-		console.log({ output });
-		if (!trimmed) return;
-		if (trimmed === 'help') {
-			output.push({ in: trimmed, out: 'Available commands: help' });
-		} else {
-			output.push({ in: trimmed, out: `Command not found: ${trimmed}` });
+	let promptEl: HTMLDivElement;
+	let output: CommandOutput[] = $state([]);
+
+	async function handleCommand(cmd: string) {
+		const result = await processCommand(cmd);
+		if (result.action === 'CLEAR') {
+			output = [];
+		} else if (result.in) {
+			output.push(result);
 		}
+		await tick();
 	}
 
 	onMount(() => {
@@ -24,6 +25,8 @@
 			}
 		};
 		document.addEventListener('click', focusPrompt);
+		// Focus prompt on initial mount
+		promptEl?.focus();
 		return () => document.removeEventListener('click', focusPrompt);
 	});
 
@@ -42,17 +45,27 @@
 <pre id="banner">{HEADING}</pre>
 <div id="terminal-output">
 	{#each output as line}
-		<div class="term-output-line">{PREFIX}<span class="in">{line.in}</span></div>
-		<div class="term-output-line out">{line.out}</div>
+		<div class="term-output-in">{PREFIX}<span class="in">{line.in}</span></div>
+		<div class="term-output-out"><FormattedOutput data={line.out} /></div>
 	{/each}
 </div>
 <div id="prompt">
 	<span id="term-prefix">{PREFIX}</span>
-	<div id="term-input" bind:this={promptEl} contenteditable on:keydown={onKeyDown}></div>
+	<div
+		id="term-input"
+		bind:this={promptEl}
+		contenteditable
+		role="textbox"
+		tabindex="0"
+		onkeydown={onKeyDown}
+	></div>
 	<span id="cursor"></span>
 </div>
 
 <style>
+	.term-output-out {
+		padding-left: 1rem;
+	}
 	.in {
 		color: #fff;
 		padding-left: 0.25rem;
@@ -132,5 +145,11 @@
 	} */
 	.term-output-line {
 		/* padding: 0.1rem 0; */
+	}
+	pre code {
+		font-family: 'Courier New', Courier, monospace;
+		padding: 1rem;
+		border-radius: 4px;
+		margin: 0.5rem 0;
 	}
 </style>
