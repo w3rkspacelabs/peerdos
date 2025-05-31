@@ -50,6 +50,70 @@ async function createFile(filePath: string): Promise<string> {
     }
 }
 
+async function editFile(filePath: string): Promise<string> {
+    try {
+        let content = '';
+        try {
+            content = await fs.readFile(filePath);
+        } catch {
+            // File doesn't exist, will be created
+        }
+        return JSON.stringify({
+            type: 'editor',
+            filePath,
+            content
+        }, null, 2);
+        // return JSON.stringify({
+        //     success: true,
+        //     message: 'File saved successfully'
+        // })
+    } catch (error: any) {
+        return JSON.stringify({ error: error?.message || 'Unknown error' }, null, 2);
+    }
+}
+
+async function searchToken(symbol: string): Promise<string> {
+    try {
+        // First search for the token by symbol
+        const searchResponse = await fetch(`https://eth.blockscout.com/api/v2/search?q=${encodeURIComponent(symbol)}`);
+        const searchData = await searchResponse.json();
+
+        // Find the first token result
+        const token = searchData.items?.find((item: any) =>
+            item.type === 'token' &&
+            item.symbol?.toLowerCase() === symbol.toLowerCase()
+        );
+
+        console.log({ token });
+
+        if (!token?.address) {
+            return JSON.stringify({ error: `Token '${symbol}' not found` }, null, 2);
+        }
+
+        // Get detailed token info
+        const tokenResponse = await fetch(`https://eth.blockscout.com/api/v2/tokens/${token.address}`);
+        const tokenData = await tokenResponse.json();
+
+        console.log({ tokenData });
+
+        return JSON.stringify({
+            type: 'token',
+            data: {
+                name: tokenData.name,
+                symbol: tokenData.symbol,
+                address: tokenData.address,
+                totalSupply: tokenData.total_supply,
+                decimals: tokenData.decimals,
+                holders: tokenData.holders,
+                type: tokenData.type,
+                exchangeRate: tokenData.exchange_rate
+            }
+        }, null, 2);
+    } catch (error: any) {
+        return JSON.stringify({ error: error?.message || 'Unknown error' }, null, 2);
+    }
+}
+
 export async function processCommand(cmd: string): Promise<CommandOutput> {
     const trimmed = cmd.trim();
 
@@ -73,6 +137,8 @@ export async function processCommand(cmd: string): Promise<CommandOutput> {
                         { name: 'ls', args: '[path]', desc: 'List directory contents' },
                         { name: 'mkdir', args: '<path>', desc: 'Create a directory' },
                         { name: 'touch', args: '<path>', desc: 'Create a file' },
+                        { name: 'edit', args: '<path>', desc: 'Create or edit a file' },
+                        { name: 'token', args: '<symbol>', desc: 'Get token information' },
                         { name: 'search', args: '<query>', desc: 'Search Blockscout' }
                     ],
                     note: 'Any other input will be treated as a search query'
@@ -114,6 +180,30 @@ export async function processCommand(cmd: string): Promise<CommandOutput> {
             return {
                 in: trimmed,
                 out: touchResult
+            };
+        case 'edit':
+            if (!args[0]) {
+                return {
+                    in: trimmed,
+                    out: JSON.stringify({ error: 'File path is required' }, null, 2)
+                };
+            }
+            const editResult = await editFile(args[0]);
+            return {
+                in: trimmed,
+                out: editResult
+            };
+        case 'token':
+            if (!args[0]) {
+                return {
+                    in: trimmed,
+                    out: JSON.stringify({ error: 'Token symbol is required' }, null, 2)
+                };
+            }
+            const tokenResult = await searchToken(args[0]);
+            return {
+                in: trimmed,
+                out: tokenResult
             };
         case 'search':
             const searchResult = await searchBlockscout(args.join(' '));
