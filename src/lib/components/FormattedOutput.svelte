@@ -4,6 +4,8 @@
 	import json from 'highlight.js/lib/languages/json';
 	import 'highlight.js/styles/github-dark.css';
 	import { onMount } from 'svelte';
+	import Table from './ObjectTable.svelte';
+	import ObjectTable from './ObjectTable.svelte';
 
 	hljs.registerLanguage('json', json);
 
@@ -76,13 +78,25 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each parsed.items.filter((item) => item.exchange_rate !== null) as item}
+				{#if parsed.items.length > 0}
+					{#each parsed.items.filter((item) => item.exchange_rate !== null) as item}
+						<tr>
+							<td>{item.name || '-'}</td>
+							<td
+								>{#if item.address}<a
+										class="address"
+										target="_blank"
+										href="https://eth.blockscout.com/address/{item.address}">{item.address}</a
+									>{:else}-{/if}
+							</td>
+							<td>{item.token_type || '-'}</td>
+						</tr>
+					{/each}
+				{:else}
 					<tr>
-						<td>{item.name || '-'}</td>
-						<td class="address">{item.address || '-'}</td>
-						<td>{item.token_type || '-'}</td>
+						<td colspan="3">No onchain data available for this address</td>
 					</tr>
-				{/each}
+				{/if}
 			</tbody>
 		</table>
 	</div>
@@ -125,6 +139,8 @@
 			</tbody>
 		</table>
 	</div>
+{:else if parsed.success && parsed.data}
+	<ObjectTable data={parsed.data}></ObjectTable>
 {:else}
 	<pre><code class="language-json">{JSON.stringify(parsed, null, 2)}</code></pre>
 {/if}
@@ -177,7 +193,7 @@
 		border-bottom: 1px solid #2a2a2a;
 		color: #fff;
 	}
-	td.address {
+	.address {
 		font-family: monospace;
 		color: #4a9eff;
 	}
