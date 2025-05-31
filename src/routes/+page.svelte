@@ -8,6 +8,7 @@
 	import Editor from '$lib/components/Editor.svelte';
 
 	let promptEl: HTMLDivElement;
+	let scrollEnd: HTMLDivElement;
 	let output: CommandOutput[] = $state([]);
 	let PWD = $state('');
 	let loading = $state(false);
@@ -27,14 +28,17 @@
 				}
 			} catch {}
 		}
-		if (result.prefix !== undefined) {
-			PWD = result.prefix;
-		}
+
 		await tick();
 	}
 
+	function focus() {
+		promptEl.focus();
+		scrollEnd.scrollIntoView({ behavior: 'smooth' });
+	}
+
 	onMount(() => {
-		console.log({ PREFIX, PWD });
+		console.log({ PREFIX, PWD, scrollEnd, promptEl });
 		let isSelecting = false;
 		let selectionTimeout: ReturnType<typeof setTimeout>;
 
@@ -62,9 +66,22 @@
 
 		const focusPrompt = (e: MouseEvent) => {
 			if (promptEl && document.activeElement !== promptEl && !isSelecting) {
-				promptEl.focus();
+				focus();
 			}
 		};
+
+		const config = { childList: true };
+
+		const callback = function (mutationsList, observer) {
+			for (let mutation of mutationsList) {
+				if (mutation.type === 'childList') {
+					window.scrollTo(0, document.body.scrollHeight);
+				}
+			}
+		};
+
+		const observer = new MutationObserver(callback);
+		observer.observe(scrollEnd, config);
 
 		document.addEventListener('mousedown', onMouseDown);
 		document.addEventListener('mousemove', onMouseMove);
@@ -89,34 +106,38 @@
 			handleCommand(cmd).then(() => {
 				promptEl.innerText = '';
 				loading = false;
+				focus();
 			});
 			await tick();
-			promptEl.focus();
+			focus();
 		}
 	}
 </script>
 
-<pre id="banner">{HEADING}</pre>
-<div id="terminal-output">
-	{#each output as line}
-		<div class="term-output-in">{PREFIX}{PWD}$<span class="in">{line.in}</span></div>
-		<div class="term-output-out"><FormattedOutput data={line.out} /></div>
-	{/each}
-</div>
-<div id="prompt">
-	<span id="term-prefix">{PREFIX}{PWD}$</span>
-	<div
-		id="term-input"
-		bind:this={promptEl}
-		contenteditable
-		role="textbox"
-		tabindex="0"
-		onkeydown={onKeyDown}
-	></div>
-	{#if loading}
-		<span class="spinner">⏳</span>
-	{/if}
-	<span id="cursor"></span>
+<div class="terminal-container">
+	<pre id="banner">{HEADING}</pre>
+	<div id="terminal-output">
+		{#each output as line}
+			<div class="term-output-in">{PREFIX}{PWD}$<span class="in">{line.in}</span></div>
+			<div class="term-output-out"><FormattedOutput data={line.out} /></div>
+		{/each}
+		<div id="scroll-end" bind:this={scrollEnd}>&nbsp;</div>
+	</div>
+	<div id="prompt">
+		<span id="term-prefix">{PREFIX}{PWD}$</span>
+		<div
+			id="term-input"
+			bind:this={promptEl}
+			contenteditable
+			role="textbox"
+			tabindex="0"
+			onkeydown={onKeyDown}
+		></div>
+		{#if loading}
+			<span class="spinner">⏳</span>
+		{/if}
+		<span id="cursor"></span>
+	</div>
 </div>
 
 {#if editingFile}
@@ -124,35 +145,94 @@
 {/if}
 
 <style>
+	.terminal-container {
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		padding: 1rem;
+		box-sizing: border-box;
+	}
+
+	#banner {
+		margin: 0 0 1rem 0;
+		font-size: 0.5rem;
+		text-shadow:
+			0 0 1.1428571429rem #b3df60,
+			0 0 1.7142857143rem #d0dc7e;
+		flex-shrink: 0;
+	}
+
+	#terminal-output {
+		flex: 1;
+		overflow-y: auto;
+		overflow-x: hidden;
+		margin-bottom: 1rem;
+		padding-right: 0.5rem;
+		/* Custom scrollbar styles */
+		scrollbar-width: thin;
+		scrollbar-color: #666 #1e1e1e;
+		align-content: flex-end;
+	}
+
+	/* Webkit scrollbar styles */
+	#terminal-output::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	#terminal-output::-webkit-scrollbar-track {
+		background: #1e1e1e;
+	}
+
+	#terminal-output::-webkit-scrollbar-thumb {
+		background: #666;
+		border-radius: 3px;
+	}
+
+	#terminal-output::-webkit-scrollbar-thumb:hover {
+		background: #888;
+	}
+
 	.term-output-out {
 		padding-left: 1rem;
+		border-bottom: 1px solid #333;
+		margin-bottom: 0.5rem;
 	}
+
+	.term-output-in {
+		padding-left: 1rem;
+		margin-bottom: 0.25rem;
+	}
+
 	.in {
 		color: #fff;
 		padding-left: 0.25rem;
 	}
-	.out {
-		padding-left: 1rem;
-	}
+
 	#prompt {
 		display: flex;
 		align-items: center;
 		position: relative;
 		width: 100%;
-		height: 1.2em;
-		padding-bottom: 100px;
-		margin-top: 1.5rem;
+		min-height: 1.2em;
+		padding: 0.5rem;
+		background: #0003;
+		flex-shrink: 0;
 	}
+
 	#term-prefix {
 		color: limegreen;
 		padding-right: 0.25rem;
 		font-weight: normal;
+		flex-shrink: 0;
 	}
+
 	#cursor {
 		display: inline-block;
 		width: 0.5rem;
 		height: 1.2em;
 		position: relative;
+		flex-shrink: 0;
 	}
 
 	#cursor::before {
@@ -169,10 +249,10 @@
 			opacity: 0;
 		}
 	}
+
 	#term-input {
 		outline: none;
 		cursor: none;
-		/* color: #ffa128; */
 		font-weight: bold;
 		background-color: transparent;
 		border: none;
@@ -181,45 +261,16 @@
 		caret-color: transparent;
 		padding: 0;
 		margin: 0;
+		width: auto;
+		min-width: 1ch;
+		display: inline-block;
 	}
-	#banner {
-		margin-bottom: 2rem;
-		font-size: 0.5rem;
-		text-shadow:
-			0 0 1.1428571429rem #b3df60,
-			0 0 1.7142857143rem #d0dc7e;
-	}
-	#prompt {
-		width: 100%;
-		background: transparent;
-		border: none;
-		color: #fff;
-		font-weight: bold;
-	}
-	#prompt:focus {
-		outline: none;
-		border: none;
-	}
-	/* #terminal-output {
-		color: #fff;
-		font-family: 'Courier New', Courier, monospace;
-		font-size: 0.8rem;
-		margin-bottom: 1rem;
-	} */
-	.term-output-out {
-		border-bottom: 1px solid #000;
-		/* padding: 0.1rem 0; */
-	}
-	pre code {
-		font-family: 'Courier New', Courier, monospace;
-		padding: 1rem;
-		border-radius: 4px;
-		margin: 0.5rem 0;
-	}
+
 	.spinner {
 		display: inline-block;
-		/* font-size: 48px;  */
 		animation: spin 2s linear infinite;
+		margin-left: 0.5rem;
+		flex-shrink: 0;
 	}
 
 	@keyframes spin {

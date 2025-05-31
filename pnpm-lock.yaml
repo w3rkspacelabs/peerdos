@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@isomorphic-git/lightning-fs':
+        specifier: ^4.6.2
+        version: 4.6.2
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -218,6 +221,13 @@ packages:
   '@isaacs/fs-minipass@4.0.1':
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
+
+  '@isomorphic-git/idb-keyval@3.3.2':
+    resolution: {integrity: sha512-r8/AdpiS0/WJCNR/t/gsgL+M8NMVj/ek7s60uz3LmpCaTF2mEVlZJlB01ZzalgYzRLXwSPC92o+pdzjM7PN/pA==}
+
+  '@isomorphic-git/lightning-fs@4.6.2':
+    resolution: {integrity: sha512-RS/oa1UBnoUFe56bsjOEgoUUReYKQzYUlQnbERRRNv9s9KmjyWuuylPV+YgsWirR2oONKaipWYMebVQ8SAe55Q==}
+    hasBin: true
 
   '@jridgewell/gen-mapping@0.3.8':
     resolution: {integrity: sha512-imAbBGkb+ebQyxKgzv5Hu2nmROxoDOXHh80evxdoXNOrvAnVx7zimzc1Oo5h9RlfV4vPXaE2iM5pOFbvOCClWA==}
@@ -640,6 +650,9 @@ packages:
   estree-walker@2.0.2:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
 
+  fast-text-encoding@1.0.6:
+    resolution: {integrity: sha512-VhXlQgj9ioXCqGstD37E/HBeqEGV/qOD/kmbVG8h5xKBYvM1L3lR1Zn4555cQ8GkYbJa8aJSipLPndE1k6zK2w==}
+
   fdir@6.4.5:
     resolution: {integrity: sha512-4BG7puHpVsIYxZUbiUE3RqGloLaSSwzYie5jvasC4LWuBWzZawynvYouhjbQKw2JuIGYdm0DzIxl8iVidKlUEw==}
     peerDependencies:
@@ -685,12 +698,21 @@ packages:
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
+  isomorphic-textencoder@1.0.1:
+    resolution: {integrity: sha512-676hESgHullDdHDsj469hr+7t3i/neBKU9J7q1T4RHaWwLAsaQnywC0D1dIUId0YZ+JtVrShzuBk1soo0+GVcQ==}
+
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
   jiti@2.4.2:
     resolution: {integrity: sha512-rg9zJN+G4n2nfJl5MW3BMygZX56zKPNVEYYqq7adpmMh4Jn2QNEwhvQlFy6jPVdcod7txZtKHWnyZiA3a0zP7A==}
     hasBin: true
+
+  just-debounce-it@1.1.0:
+    resolution: {integrity: sha512-87Nnc0qZKgBZuhFZjYVjSraic0x7zwjhaTMrCKlj0QYKH6lh0KbFzVnfu6LHan03NO7J8ygjeBeD0epejn5Zcg==}
+
+  just-once@1.1.0:
+    resolution: {integrity: sha512-+rZVpl+6VyTilK7vB/svlMPil4pxqIJZkbnN7DKZTOzyXfun6ZiFeq2Pk4EtCEHZ0VU4EkdFzG8ZK5F3PErcDw==}
 
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
@@ -1197,6 +1219,15 @@ snapshots:
     dependencies:
       minipass: 7.1.2
 
+  '@isomorphic-git/idb-keyval@3.3.2': {}
+
+  '@isomorphic-git/lightning-fs@4.6.2':
+    dependencies:
+      '@isomorphic-git/idb-keyval': 3.3.2
+      isomorphic-textencoder: 1.0.1
+      just-debounce-it: 1.1.0
+      just-once: 1.1.0
+
   '@jridgewell/gen-mapping@0.3.8':
     dependencies:
       '@jridgewell/set-array': 1.2.1
@@ -1580,6 +1611,8 @@ snapshots:
 
   estree-walker@2.0.2: {}
 
+  fast-text-encoding@1.0.6: {}
+
   fdir@6.4.5(picomatch@4.0.2):
     optionalDependencies:
       picomatch: 4.0.2
@@ -1622,6 +1655,10 @@ snapshots:
 
   isexe@2.0.0: {}
 
+  isomorphic-textencoder@1.0.1:
+    dependencies:
+      fast-text-encoding: 1.0.6
+
   jackspeak@3.4.3:
     dependencies:
       '@isaacs/cliui': 8.0.2
@@ -1629,6 +1666,10 @@ snapshots:
       '@pkgjs/parseargs': 0.11.0
 
   jiti@2.4.2: {}
+
+  just-debounce-it@1.1.0: {}
+
+  just-once@1.1.0: {}
 
   kleur@4.1.5: {}
 
