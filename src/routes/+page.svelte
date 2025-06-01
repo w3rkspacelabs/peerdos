@@ -6,17 +6,100 @@
 	import FormattedOutput from '$lib/components/FormattedOutput.svelte';
 	import { fs } from '$lib/fs';
 	import Editor from '$lib/components/Editor.svelte';
+	import {
+		connectWallet,
+		decryptSecret,
+		disconnectWallet,
+		encryptAndSaveSecret,
+		saveWallet,
+		generatePK,
+		getSavedSecrets,
+		getWallets
+	} from '$lib/web3';
+	import { getBalances } from '$lib/utils';
 
 	let promptEl: HTMLDivElement;
 	let scrollEnd: HTMLDivElement;
 	let output: CommandOutput[] = $state([]);
 	let PWD = $state('');
+	let USER = $state('');
 	let loading = $state(false);
 	let editingFile: string | null = $state(null);
 	let isPasswordInput = $state(false);
 	let actualPasswordValue = $state('');
+	let account: any = $state('guest');
 
 	async function handleCommand(cmd: string) {
+		if (cmd == 'login') {
+			const conn = await connectWallet();
+			account = conn?.accounts[0];
+			console.log({ conn, account });
+			output.push({
+				in: 'login',
+				out: JSON.stringify(
+					{
+						success: true,
+						message: `Connected to eth:${account}`
+					},
+					null,
+					2
+				)
+			});
+			return;
+		} else if (cmd == 'logout') {
+			disconnectWallet().then(() => {
+				account = 'guest';
+				output.push({
+					in: 'logout',
+					out: JSON.stringify({ success: true, message: 'Disconnected from Ethereum' }, null, 2)
+				});
+			});
+			return;
+		} else if (cmd == 'user') {
+			output.push({
+				in: 'user',
+				out: JSON.stringify({ success: account !== 'guest', message: account })
+			});
+			return;
+		} else if (cmd == 'balances') {
+			const balances = await getBalances(account);
+			output.push({
+				in: 'balances',
+				out: JSON.stringify(balances)
+			});
+			return;
+		} else if (cmd == 'wallet new') {
+			let dres = await getSavedSecrets();
+			console.log({ dres });
+			let pass = await decryptSecret(dres[account]);
+			if (!pass) {
+				const pk = generatePK();
+				console.log({ pk });
+				const res = await encryptAndSaveSecret(pk, account);
+				console.log({ res });
+				dres = await getSavedSecrets();
+				pass = await decryptSecret(dres[account]);
+			}
+			let pk = generatePK();
+			console.log({ pk, pass });
+			if (!pass) return;
+			saveWallet(pk, pass, account);
+
+			output.push({
+				in: 'wallet new',
+				out: JSON.stringify({ success: true, message: 'Wallet created' }, null, 2)
+			});
+			return;
+		} else if (cmd == 'wallet ls') {
+			const secrets = await getSavedSecrets();
+			console.log({ secrets });
+			const wallets = await getWallets();
+			output.push({
+				in: 'wallet ls',
+				out: JSON.stringify({ wallets: wallets[account] }, null, 2)
+			});
+			return;
+		}
 		console.log({ cmd, isPasswordInput, actualPasswordValue });
 		const result = await processCommand(isPasswordInput ? `passwd ${actualPasswordValue}` : cmd);
 		if (result.action === 'CLEAR') {
@@ -143,6 +226,7 @@
 
 <div class="terminal-container">
 	<pre id="banner">{HEADING}</pre>
+	<span id="user">{account}</span>
 	<div id="terminal-output">
 		{#each output as line}
 			<div class="term-output-in">{PREFIX}{PWD}$<span class="in">{line.in}</span></div>
@@ -173,6 +257,17 @@
 {/if}
 
 <style>
+	#user {
+		background-color: darkgreen;
+		padding: 0.25rem 0.5rem;
+		border-radius: 0.25rem;
+		margin-right: 0.5rem;
+		display: inline-block;
+		position: absolute;
+		right: 1rem;
+		top: 1rem;
+	}
+
 	.terminal-container {
 		height: 100vh;
 		display: flex;

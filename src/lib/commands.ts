@@ -1,5 +1,7 @@
 import { fs } from '$lib/fs';
 import type { DirectoryEntry } from '$lib/fs';
+import { connectWallet } from '$lib/web3';
+import { browser } from '$app/environment';
 
 export interface CommandOutput {
     in: string;
@@ -140,7 +142,9 @@ export async function processCommand(cmd: string): Promise<CommandOutput> {
                         { name: 'edit', args: '<path>', desc: 'Create or edit a file' },
                         { name: 'token', args: '<symbol>', desc: 'Get token information' },
                         { name: 'search', args: '<query>', desc: 'Search Blockscout' },
-                        { name: 'passwd', args: '<text>', desc: 'Save password to localStorage' }
+                        { name: 'login', args: '', desc: 'Show current login time' },
+                        { name: 'wallet new', args: '', desc: 'Create a new wallet' },
+                        { name: 'wallet ls', args: '', desc: 'List all wallets' }
                     ],
                     note: 'Any other input will be treated as a search query'
                 }, null, 2)
@@ -220,6 +224,14 @@ export async function processCommand(cmd: string): Promise<CommandOutput> {
                 };
             }
             try {
+                // Check if we're in a browser environment
+                if (!browser) {
+                    return {
+                        in: trimmed,
+                        out: JSON.stringify({ error: 'Password commands only available in browser' }, null, 2)
+                    };
+                }
+
                 // set only if it doesnt exist or empty
                 if (!localStorage.getItem('PASSWD')) {
                     localStorage.setItem('PASSWD', args[0]);
@@ -239,6 +251,15 @@ export async function processCommand(cmd: string): Promise<CommandOutput> {
                     out: JSON.stringify({ error: error?.message || 'Failed to save password' }, null, 2)
                 };
             }
+        case 'login':
+            const conn = await connectWallet()
+            return {
+                in: trimmed,
+                out: JSON.stringify({
+                    success: true,
+                    message: `Connected to Ethereum. ${new Date().toLocaleString()}`
+                }, null, 2)
+            };
         default:
             // Treat as a search query by default
             const defaultSearchResult = await searchBlockscout(trimmed);

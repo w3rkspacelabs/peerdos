@@ -227,6 +227,16 @@
 	</div>
 {:else if parsed.success && parsed.data}
 	<ObjectTable data={parsed.data}></ObjectTable>
+{:else if parsed.wallets}
+	<ol class="wallets">
+		{#each parsed.wallets as wallet}
+			<li>
+				<a target="_blank" href={`https://eth.blockscout.com/address/${JSON.parse(wallet).address}`}
+					>{JSON.parse(wallet).address}</a
+				>
+			</li>
+		{/each}
+	</ol>
 {:else if parsed.type == 'editor'}
 	<div class="message">
 		<p>
